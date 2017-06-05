@@ -1,0 +1,45 @@
+Properties
+Web Application
+ASP.NET application
+Target Framework : .NET Framework 4.5 
+
+
+#1 - Prerequisites for the development/production environment
+
+INSTALLATIONS in local machine
+- Microsoft Visual Studio 2015 
+- IIS
+
+CONFIGURATIONS in local machine
+-IIS
+Configure IIS Windows10 => Control Panel>Programs>Programs and Features>Turn Windows features on or off>Internet Information Services
+
+Set IIS10 for ASP.NET 4.6 =>
+Control Panel>Programs>Programs and Features>Turn Windows features on or off>Internet Information Services
+> World Wide Web Services -> Application Development Features ->ASP.NET [4.6]
+
+
+#2 - Steps to deploy/publish the web app
+
+IIS Manager => Select the server>Sites>Add Website> 
+	Insert the site name
+	Select Application pool from the list (or leave the defaul - it will be crated automatic)
+	Insert the physical path (create it in case)
+	Set a free port (not used from other website)
+	Start the website from the Actions banner (right side) in case it's not started yet 
+
+[Procedure1]
+Visual Studio 2015 => File> Open> Project/Solution> select the current project (file .sln)
+Select RElease mode
+VS>Build>Build Solution
+Solution Explorer> right click on the project>Publish
+	Profile>Custom
+	Connection>File System> Add target location (the website physical path on iis)
+	Settings> Release
+	Publish
+
+[Procedure2]
+Copy and Paste the Compiled files (folder Compiled) into the target location on iis (the website physical path on iis)
+
+#3 - Run the web application
+open any browser and run the URL related to the website on iis
