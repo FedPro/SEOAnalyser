@@ -39,13 +39,12 @@ namespace SEO_Analyser
 
         protected int AnalyzeLinks(string pText)
         {
-            StringBuilder sb = new StringBuilder();
+            int c = 0;            
             ///reg to extract links
             var regLinks = new Regex(@"\b(?:https?://|www\.)\S+\b", RegexOptions.IgnoreCase);
             foreach (Match m in regLinks.Matches(pText))
-                sb.Append(m.Value + ";");
-
-            return sb.ToString().Split(new char[] { ';'}, StringSplitOptions.RemoveEmptyEntries).Count();
+                c += 1;
+            return c;
         }
 
 
