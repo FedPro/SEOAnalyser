@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web.UI;
 using System.Web.UI.WebControls;
 
 
@@ -14,48 +15,30 @@ namespace SEO_Analyser
         {
             if (!IsPostBack)
             {
-                ViewState["SortExpr"] = "SortbyWord ASC";
+                string Sortkey = "SortExpr_";
+                ViewState[Sortkey + "gvWords"] = "SortbyWord ASC";
+                ViewState[Sortkey + "gvMetaTags"] = "SortbyWord ASC";
             }
-        }
-
-
-        protected void AnalyzeMetaTags(string responseRequest)
-        {
-            ///meta tags content row
-            var MTcontent = HtmlParserHelper.GetMetaTagsContent(responseRequest);
-            var words = MTcontent.Split(AnalyzerUtilities.GetDelimitersList(), StringSplitOptions.RemoveEmptyEntries);
-            // dictionary to store and count the words found
-            Dictionary<string, int> wordsCounter = new Dictionary<string, int>();
-            foreach (string s in words)
-            {
-                string w = s.ToLower();
-                wordsCounter = AnalyzerUtilities.AddWordToList(w, wordsCounter, chkMtKey.Checked);
-            }
-            //Binding data
-            gvMetaTags.DataSource = wordsCounter;
-            gvMetaTags.DataBind();
-            gvMetaTags.Visible = true;
         }
 
         protected int AnalyzeLinks(string pText)
-        {           
+        {
             ///reg to extract links
             var regLinks = new Regex(@"\b(?:https?://|www\.)\S+\b", RegexOptions.IgnoreCase);
-            return regLinks.Matches(pText).Count;   
+            return regLinks.Matches(pText).Count;
         }
 
-
-        protected int AnalyzeText(string InputTxt)
+        protected Dictionary<string, int> Analyzer(string InputTxt, bool pCountOccurrences)
         {
-            // dictionary to store and count the words found
-            Dictionary<string, int> wordsCounter = new Dictionary<string, int>();
-            // initialization         
+            // initialization          
             var stopW = new string[] { }; ;
             if (chkStopwords.Checked) // Load the stop words only in case we need filter out the text
-                stopW = AnalyzerUtilities.GetStopWordsList();        
+                stopW = AnalyzerUtilities.GetStopWordsList();
+            // dictionary to store and count the words found
+            Dictionary<string, int> wordsCounter = new Dictionary<string, int>();
+            ////////////////////////////////////////////////////////////////////////////////////
             // slipt the input string by delimiters
             var Inputwords = InputTxt.Split(AnalyzerUtilities.GetDelimitersList(), StringSplitOptions.RemoveEmptyEntries);
-            
             foreach (string s in Inputwords)
             {
                 string w = s.ToLower();
@@ -65,15 +48,20 @@ namespace SEO_Analyser
                         w = "";
 
                 // Add word to the counter list
-                wordsCounter = AnalyzerUtilities.AddWordToList(w, wordsCounter, chkKeys.Checked);
+                wordsCounter = AnalyzerUtilities.AddWordToList(w, wordsCounter, pCountOccurrences);
             }
-            //Binding data
-            ViewState["dicWords"] = wordsCounter;
-            BindOrderedData(ViewState["SortExpr"].ToString());
-            return wordsCounter.Count();
+            ////////////////////////////////////////////////////////////////////////////////////
+            return wordsCounter;
         }
 
 
+        protected void BindData(Dictionary<string, int> pData, string pGridViewID, string pDicKey, string pSortExprKey)
+        {
+            //Binding data
+            ViewState[pDicKey] = pData;
+            BindOrderedData(ViewState[pSortExprKey].ToString(), pDicKey, pGridViewID);
+            //return wordsCounter.Count();
+        }
 
         protected void inputTypes_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -94,21 +82,26 @@ namespace SEO_Analyser
 
         protected void gvData_Sorting(object sender, GridViewSortEventArgs e)
         {
+            //get the Client Id of the grid View
+            string gvID = ((System.Web.UI.Control)sender).ClientID;
+            //set the key for the View state to get the Sort expression
+            var SortKey = "SortExpr_" + gvID;
+
             //get the current state of the sort expression
-            string[] State_SortExpressions = ViewState["SortExpr"].ToString().Split(' ');
+            string[] State_SortExpressions = ViewState[SortKey].ToString().Split(' ');
 
             // check about which column
             if (State_SortExpressions[0] == e.SortExpression)
             {
-                ViewState["SortExpr"] = State_SortExpressions[1] == "ASC" ? e.SortExpression + " " + "DESC" : e.SortExpression + " " + "ASC";
+                ViewState[SortKey] = State_SortExpressions[1] == "ASC" ? e.SortExpression + " " + "DESC" : e.SortExpression + " " + "ASC";
 
             }
             // in case of another column - sort by ASC
             else
             {
-                ViewState["SortExpr"] = e.SortExpression + " " + "ASC";
-            }
-            BindOrderedData(ViewState["SortExpr"].ToString());
+                ViewState[SortKey] = e.SortExpression + " " + "ASC";
+            }            
+            BindOrderedData(ViewState[SortKey].ToString(), "dic_"+gvID, gvID);
         }
 
         protected void Totals(string pAction, int totLinks = 0, int totWords = 0)
@@ -132,12 +125,13 @@ namespace SEO_Analyser
                     break;
             }
         }
-        protected void BindOrderedData(string expr)
+
+        protected void BindOrderedData(string expr, string dicKey, string GridViewID)
         {
-            if (ViewState["dicWords"] != null)
+            if (ViewState[dicKey] != null)
             {
                 // Get the data from ViewState
-                Dictionary<string, int> wordsCounter = (Dictionary<string, int>)ViewState["dicWords"];
+                Dictionary<string, int> wordsCounter = (Dictionary<string, int>)ViewState[dicKey];
                 var sortedDict = new Dictionary<string, int>();
                 switch (expr)
                 {
@@ -154,10 +148,16 @@ namespace SEO_Analyser
                         sortedDict = wordsCounter.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
                         break;
                 }
-                ViewState["dicWords"] = sortedDict;
-                gvWords.DataSource = sortedDict;
-                gvWords.DataBind();
-                gvWords.Visible = true;
+                ViewState[dicKey] = sortedDict;
+
+                // Find control on page
+                GridView gvControl = (GridView)FindControl(GridViewID);
+                if (gvControl != null)
+                {
+                    gvControl.DataSource = sortedDict;
+                    gvControl.DataBind();
+                    gvControl.Visible = true;
+                }
             }
         }
 
@@ -181,7 +181,8 @@ namespace SEO_Analyser
                 else
                 {
                     userText = response.Content;
-                    AnalyzeMetaTags(response.Content);
+                    ///pass the meta tags content row to the Analyzer                                                  
+                    BindData(Analyzer(HtmlParserHelper.GetMetaTagsContent(response.Content), chkMtKey.Checked), "gvMetaTags", "dic_gvMetaTags", "SortExpr_gvMetaTags");
                     HtmlParsed = HtmlParserHelper.ParseHtml(response.Content);
                 }
             }
@@ -194,7 +195,10 @@ namespace SEO_Analyser
                 linksTot = AnalyzeLinks(userText);
 
             //analyze all words in the text/parse html
-            var wordsTot = AnalyzeText(HtmlParsed != "" ? HtmlParsed : userText);
+            var wordsTot = 0;
+            var list = Analyzer(HtmlParsed != "" ? HtmlParsed : userText, chkKeys.Checked);
+            wordsTot = list.Count();
+            BindData(list, "gvWords", "dic_gvWords", "SortExpr_gvWords");
 
             //Bind totals
             Totals("bind", linksTot, wordsTot);

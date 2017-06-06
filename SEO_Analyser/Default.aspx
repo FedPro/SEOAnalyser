@@ -42,7 +42,7 @@
         <asp:Button ID="btnClear" runat="server" Text="Clear" OnClick="btnClear_Click" />
         <br /><br />
 <asp:Label ID="lblErrorMessage" runat="server" Visible="false" ForeColor="Red"></asp:Label><br /><br />
-        <asp:GridView ID="gvMetaTags" runat="server" CellPadding="4" AutoGenerateColumns="false" ForeColor="#333333" GridLines="None">
+        <asp:GridView ID="gvMetaTags" Width="50%" runat="server" CellPadding="4" AutoGenerateColumns="false" ForeColor="#333333" GridLines="None" AllowSorting="true" onsorting="gvData_Sorting">
              <Columns>
                 <asp:TemplateField HeaderText="Meta Tag Word" SortExpression="SortbyWord">
                     <ItemTemplate>
