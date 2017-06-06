@@ -38,13 +38,10 @@ namespace SEO_Analyser
         }
 
         protected int AnalyzeLinks(string pText)
-        {
-            int c = 0;            
+        {           
             ///reg to extract links
             var regLinks = new Regex(@"\b(?:https?://|www\.)\S+\b", RegexOptions.IgnoreCase);
-            foreach (Match m in regLinks.Matches(pText))
-                c += 1;
-            return c;
+            return regLinks.Matches(pText).Count;   
         }
 
 
@@ -192,7 +189,10 @@ namespace SEO_Analyser
                 gvMetaTags.Visible = false;
 
             //analyze all links in the text/parse html
-            var linksTot = AnalyzeLinks(userText);
+            var linksTot = 0;
+            if (chkLinks.Checked)
+                linksTot = AnalyzeLinks(userText);
+
             //analyze all words in the text/parse html
             var wordsTot = AnalyzeText(HtmlParsed != "" ? HtmlParsed : userText);
 
